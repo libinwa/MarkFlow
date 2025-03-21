@@ -26,10 +26,38 @@
             }
         }
         .mermaid {
+            position: relative;
             background-color: #f9f9f9;
             padding: 10px;
             margin: 10px 0;
             overflow: auto; /* 如果图表过大，显示滚动条 */
+        }
+        .mermaid-btn-panel {
+          position: absolute;
+          top: 10px; /* 控制按钮面板距离上面边的距离 */
+          right: 10px; /* 控制按钮面板距离右边的距离 */
+          display: flex;
+          flex-direction: column; /* 按列排 */
+          gap: 10px; /* 按钮之间的间隔 */
+        }
+        .open-svg-btn {
+          color: blue;
+          font-size: 100%;
+          border-color: lightblue;
+          border-radius: 50%;
+          text-align: center;
+          cursor: pointer;
+          opacity: 0.2;
+          transition: opacity 0.3s ease;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .open-svg-btn:hover {
+          opacity: 1; /* 鼠标靠近按钮不透明*/
+        }
+        .open-svg-btn:focus {
+          outline: none;
         }
         #drop-zone {
             border: 2px dashed #ccc;
@@ -121,6 +149,29 @@
                     container.addEventListener('wheel', panzoom.zoomWithWheel);
                     panzoomInstances.set(container, panzoom); // 使用容器作为键
                 }
+
+                // 创建按钮面板 mermaid-btn-panel
+                const btnpanel = document.createElement('div');
+                btnpanel.classList.add('mermaid-btn-panel');
+                // 给 panel 中添加按钮
+                btnpanel.innerHTML = '<button class="open-svg-btn">+</button>';
+                const opensvg = btnpanel.querySelector('.open-svg-btn');
+                opensvg.onclick = () => {
+                  const ssvg = new XMLSerializer().serializeToString(svg);
+                  const win = window.open('', '_blank');
+                  const blob = new Blob([ssvg], {type: 'image/svg+xml;charset=utf-8'});
+                  const url = URL.createObjectURL(blob);
+                  win.document.write('<a href="' + url + '" download="' + svg.id + '.svg">Click to download this figure</a>');
+                  win.document.write('<div>' + ssvg + '</div>');
+                  win.addEventListener('beforeunload', function(e) {
+                    // 释放对blob资源的引用
+                    URL.revokeObjectURL(url);
+                  });
+                  win.document.close();
+                };
+
+                // 添加 mermaid-btn-panel 到 container
+                container.appendChild(btnpanel);
             }).catch((error) => {
                 addErrorMessage(container, `Mermaid 图表渲染失败: ${error.message}`);
             });
