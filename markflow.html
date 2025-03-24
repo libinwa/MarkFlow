@@ -6,11 +6,9 @@
     <title>MarkFlow - Markdown and Mermaid Viewer</title>
     <!-- 引入 marked.js 和 mermaid.js -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-    <!-- 引入 Panzoom -->
-    <script src="https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <!-- 引入 GitHub Markdown CSS（浅色主题） -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css">
     <style>
         /* 设置显示区域样式 */
         .markdown-body {
@@ -132,24 +130,18 @@
         }
     };
 
-    let panzoomInstances = new Map(); // 使用 Map 存储 Panzoom 实例
-
     // 渲染单个 Mermaid 图表
     function renderMermaidChart(container) {
+        // 创建div保留原始格式文本
+        const precode = document.createElement('div');
+        precode.innerHTML = '<pre><code>' + container.textContent + '</code></pre>';
+
         try {
             mermaid.run({
                 nodes: [container],
             }).then(() => {
+                // 获得当前 svg 元素
                 const svg = container.querySelector('svg');
-                if (svg && !panzoomInstances.has(container)) {
-                    const panzoom = Panzoom(svg, {
-                        maxScale: 5,
-                        minScale: 0.5,
-                    });
-                    container.addEventListener('wheel', panzoom.zoomWithWheel);
-                    panzoomInstances.set(container, panzoom); // 使用容器作为键
-                }
-
                 // 创建按钮面板 mermaid-btn-panel
                 const btnpanel = document.createElement('div');
                 btnpanel.classList.add('mermaid-btn-panel');
@@ -173,26 +165,19 @@
                 // 添加 mermaid-btn-panel 到 container
                 container.appendChild(btnpanel);
             }).catch((error) => {
+                // 插入原始格式文本
+                container.insertBefore(precode, container.children[0]);
                 addErrorMessage(container, `Mermaid 图表渲染失败: ${error.message}`);
             });
         } catch (error) {
+            // 插入原始格式文本
+            container.insertBefore(precode, container.children[0]);
             addErrorMessage(container, `Mermaid 图表渲染失败: ${error.message}`);
         }
     }
 
-    // 清理所有 Panzoom 实例
-    function cleanupCharts() {
-        for (const [container, instance] of panzoomInstances) {
-            instance.destroy(); // 销毁 Panzoom 实例
-            container.removeEventListener('wheel', instance.zoomWithWheel); // 移除事件监听器
-        }
-        panzoomInstances.clear(); // 清空 Map
-    }
-
     // 渲染所有 Mermaid 图表
     function renderMermaidCharts() {
-        cleanupCharts(); // 清理之前的所有实例
-
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
